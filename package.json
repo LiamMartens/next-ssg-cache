@@ -1,6 +1,6 @@
 {
   "name": "next-ssg-cache",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "main": "./lib/cjs/index.js",
   "module": "./lib/esm/index.js",
   "types": "./types",
@@ -10,7 +10,7 @@
     "name": "Liam Martens"
   },
   "homepage": "https://github.com/LiamMartens/next-ssg-cache",
-  "files": ["lib"],
+  "files": ["lib", "types"],
   "scripts": {
     "build": "yarn tsc",
     "tsc": "tsc -p tsconfig.json && tsc -p tsconfig.cjs.json"
