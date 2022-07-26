@@ -12,8 +12,14 @@ export enum CacheStatus {
 export type SsgCacheEntry<T> = {
   status: CacheStatus.HIT
   data: T
+  exp?: number
 } | {
   status: CacheStatus.MISS | CacheStatus.PENDING
+}
+
+export type SsgCacheGetOptions = {
+  skipCache?: boolean
+  ttl?: number
 }
 
 export interface SsgCacheStore {
@@ -56,20 +62,30 @@ export class SsgCache {
     }
   }
 
-  public async get<T extends keyof SsgCacheStore>(key: T | [T, ...string[]], fetcher: () => Promise<SsgCacheStore[T]>): Promise<SsgCacheStore[T]> {
+  public async get<T extends keyof SsgCacheStore>(key: T | [T, ...string[]], fetcher: () => Promise<SsgCacheStore[T]>, options?: SsgCacheGetOptions): Promise<SsgCacheStore[T]> {
     const cacheKey = typeof key === 'string' ? key : key.join('/')
 
     try {
-      const value = await this.cache.get(cacheKey, null) as SsgCacheEntry<SsgCacheStore[T]> | null;
-      if (value) {
-        if (value.status === CacheStatus.HIT) {
-          return value.data;
-        } else if (value.status === CacheStatus.PENDING) {
-          return new Promise<SsgCacheStore[T]>((resolve, reject) => {
-            setTimeout(() => {
-              this.get(key, fetcher).then(resolve).catch(reject);
-            }, 10)
-          });
+      if (!options.skipCache) {
+        const value = await this.cache.get(cacheKey, null) as SsgCacheEntry<SsgCacheStore[T]> | null;
+
+        if (!value) {
+          if (
+            value.status === CacheStatus.HIT
+            && (
+              typeof options.ttl !== 'number'
+              || typeof value.exp !== 'number'
+              || Date.now() < value.exp
+            )
+          ) {
+            return value.data;
+          } else if (value.status === CacheStatus.PENDING) {
+            return new Promise<SsgCacheStore[T]>((resolve, reject) => {
+              setTimeout(() => {
+                this.get(key, fetcher).then(resolve).catch(reject);
+              }, 10)
+            });
+          }
         }
       }
 
@@ -82,6 +98,9 @@ export class SsgCache {
       await this.cache.set(cacheKey, {
         status: CacheStatus.HIT,
         data,
+        ...(typeof options.ttl === 'number' ? {
+          exp: Date.now() + options.ttl,
+        } : {}),
       })
 
       return data;
