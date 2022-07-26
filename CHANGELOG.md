@@ -1,5 +1,8 @@
 # CHANGELOG
 
+## v1.1.1
+* Fixed `undefined` bug
+
 ## v1.1.0
 * Added `ttl` and `skipCache` options
 

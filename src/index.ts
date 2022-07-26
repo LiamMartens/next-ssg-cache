@@ -66,14 +66,14 @@ export class SsgCache {
     const cacheKey = typeof key === 'string' ? key : key.join('/')
 
     try {
-      if (!options.skipCache) {
+      if (!options?.skipCache) {
         const value = await this.cache.get(cacheKey, null) as SsgCacheEntry<SsgCacheStore[T]> | null;
 
-        if (!value) {
+        if (value) {
           if (
             value.status === CacheStatus.HIT
             && (
-              typeof options.ttl !== 'number'
+              typeof options?.ttl !== 'number'
               || typeof value.exp !== 'number'
               || Date.now() < value.exp
             )
@@ -98,7 +98,7 @@ export class SsgCache {
       await this.cache.set(cacheKey, {
         status: CacheStatus.HIT,
         data,
-        ...(typeof options.ttl === 'number' ? {
+        ...(typeof options?.ttl === 'number' ? {
           exp: Date.now() + options.ttl,
         } : {}),
       })

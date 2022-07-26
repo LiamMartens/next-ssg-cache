@@ -9,6 +9,7 @@
     "noImplicitReturns": true,
     "noImplicitThis": true,
     "declaration": true,
+    "strictNullChecks": true,
     "lib": ["esnext", "dom"],
     "outDir": "./lib/esm",
     "declarationDir": "./types"
