@@ -1,5 +1,8 @@
 # CHANGELOG
 
+## v1.1.2
+* Implemented file locks to prevent conflicts
+
 ## v1.1.1
 * Fixed `undefined` bug
 

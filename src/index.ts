@@ -1,5 +1,6 @@
 import * as fs from 'fs-extra';
 import * as path from 'path';
+import lockFile from 'lockfile';
 import uniqid from 'uniqid';
 import Cache from 'file-system-cache';
 
@@ -41,6 +42,7 @@ export class SsgCache {
 
   public id: string;
   public cache: ReturnType<typeof Cache>;
+  public maxTimeout = 60000;
 
   constructor() {
     try {
@@ -62,12 +64,73 @@ export class SsgCache {
     }
   }
 
+  public async wait(ms: number) {
+    return new Promise<void>((resolve) => {
+      setTimeout(resolve, ms);
+    });
+  }
+
+  public async retry<P extends Promise<any>>(fn: () => P, maxTimes: number, ms: number = 100) {
+    let retryCount = 0
+    while (true) {
+      try {
+        const result = await fn();
+        return result;
+      } catch (err) {
+        if (retryCount >= maxTimes) {
+          throw err;
+        }
+        await this.wait(ms);
+      }
+    }
+  }
+
+  public async lock(path: string) {
+    await new Promise<void>((resolve, reject) => (
+      lockFile.lock(path, (err) => {
+        if (err) reject(err);
+        resolve();
+      })
+    ));
+  }
+
+  public async unlock(path: string) {
+    await new Promise<void>((resolve, reject) => (
+      lockFile.unlock(path, (err) => {
+        if (err) reject(err);
+        resolve();
+      })
+    ));
+  }
+
+  public async waitForUnlock(path: string) {
+    const checkForLock = () => new Promise<boolean>((resolve, reject) => {
+      lockFile.check(path, (err, isLocked) => {
+        resolve(isLocked)
+      })
+    })
+
+    return Promise.race([
+      new Promise<void>(async (resolve) => {
+        while (await checkForLock()) {
+          await this.wait(100)
+        }
+      }),
+      new Promise<void>(async (resolve, reject) => {
+        await this.wait(this.maxTimeout)
+        reject(new Error(`[next-ssg-cache] Timed-out whilst waiting for cache file to unlock (${this.maxTimeout}ms)`))
+      }),
+    ]);
+  }
+
   public async get<T extends keyof SsgCacheStore>(key: T | [T, ...string[]], fetcher: () => Promise<SsgCacheStore[T]>, options?: SsgCacheGetOptions): Promise<SsgCacheStore[T]> {
     const cacheKey = typeof key === 'string' ? key : key.join('/')
 
     try {
       if (!options?.skipCache) {
-        const value = await this.cache.get(cacheKey, null) as SsgCacheEntry<SsgCacheStore[T]> | null;
+        const value = await this.retry(async () => {
+          return await this.cache.get(cacheKey, null) as SsgCacheEntry<SsgCacheStore[T]> | null
+        }, 3);
 
         if (value) {
           if (
@@ -89,9 +152,12 @@ export class SsgCache {
         }
       }
 
+      await this.waitForUnlock(this.cache.path(cacheKey));
+      await this.lock(this.cache.path(cacheKey));
+
       await this.cache.set(cacheKey, {
         status: CacheStatus.PENDING,
-      });
+      })
 
       console.log(`[next-ssg-cache] fetching ${cacheKey}`)
       const data = await fetcher();
@@ -102,6 +168,8 @@ export class SsgCache {
           exp: Date.now() + options.ttl,
         } : {}),
       })
+
+      await this.unlock(this.cache.path(cacheKey));
 
       return data;
     } catch (err) {
