@@ -42,7 +42,12 @@ export class SsgCache<S extends SsgCacheStore> {
 
   constructor() {
     try {
-      const buildId = fs.readFileSync(SsgCache.BUILD_ID_PATH, {
+      const hasBuildId = fs.existsSync(SsgCache.BUILD_ID_PATH)
+      if (!hasBuildId) {
+        console.warn('[next-ssg-cache] No build ID. Initializing without persistent cache')
+      }
+
+      const buildId = !hasBuildId ? uniqid() : fs.readFileSync(SsgCache.BUILD_ID_PATH, {
         encoding: 'utf-8',
       });
 
