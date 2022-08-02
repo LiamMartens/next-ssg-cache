@@ -1,5 +1,8 @@
 # CHANGELOG
 
+## v1.2.0
+* Improved local cacching
+
 ## v1.1.2
 * Updated retry logic
 
