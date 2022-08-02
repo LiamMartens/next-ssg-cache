@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## v1.2.0
+* Improved local cacching
+
+## v1.1.2
+* Updated retry logic
+
 ## v1.1.1
 * Fixed `undefined` bug
 
