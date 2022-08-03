@@ -56,7 +56,10 @@ export class SsgCache<S extends SsgCacheStore> {
 
     this.id = buildId;
 
-    fs.ensureDirSync(this.path());
+    const cachePath = this.path()
+    if (!fs.existsSync(cachePath)) {
+      fs.mkdirpSync(this.path());
+    }
   }
 
   public path(keys: string[] = [], ext?: 'cache' | 'stat') {
