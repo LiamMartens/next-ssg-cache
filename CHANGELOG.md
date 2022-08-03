@@ -1,5 +1,8 @@
 # CHANGELOG
 
+## v1.3.0
+* Support non-persistent cache
+
 ## v1.2.4
 * Updated `fs-extra`
 
