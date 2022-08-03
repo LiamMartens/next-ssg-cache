@@ -49,10 +49,7 @@ export class SsgCache<S extends SsgCacheStore> {
 
   constructor() {
     const hasBuildId = fs.existsSync(SsgCache.BUILD_ID_PATH)
-
-    if (!hasBuildId) {
-      console.warn('[next-ssg-cache] No build ID. Initializing without persistent cache')
-    }
+    this.persistent = hasBuildId
 
     const buildId = !hasBuildId ? uniqid() : fs.readFileSync(SsgCache.BUILD_ID_PATH, {
       encoding: 'utf-8',
@@ -73,9 +70,12 @@ export class SsgCache<S extends SsgCacheStore> {
           });
         }
       } catch(err) {
+        console.warn('[next-ssg-cache] Running in memory-only mode')
         this.debugInstance(`Unable to create cache directory, running in memory-only mode: (%O)`, err)
         this.persistent = false
       }
+    } else {
+      console.warn('[next-ssg-cache] Running in memory-only mode')
     }
   }
 

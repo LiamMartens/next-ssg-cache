@@ -1,5 +1,8 @@
 # CHANGELOG
 
+# v1.3.3
+* Fixed persistent switch
+
 ## v1.3.2
 * Disable `persistent` if the directory can not be created
 ## v1.3.1
