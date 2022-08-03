@@ -41,26 +41,22 @@ export class SsgCache<S extends SsgCacheStore> {
   public maxTimeout = 60000;
 
   constructor() {
-    try {
-      const hasBuildId = fs.existsSync(SsgCache.BUILD_ID_PATH)
-      if (!hasBuildId) {
-        console.warn('[next-ssg-cache] No build ID. Initializing without persistent cache')
-      }
-
-      const buildId = !hasBuildId ? uniqid() : fs.readFileSync(SsgCache.BUILD_ID_PATH, {
-        encoding: 'utf-8',
-      });
-
-      if (!buildId) {
-        throw new Error('Empty build ID');
-      }
-
-      this.id = buildId;
-
-      fs.ensureDirSync(this.path())
-    } catch (err) {
-      throw new Error('Build not initialized');
+    const hasBuildId = fs.existsSync(SsgCache.BUILD_ID_PATH)
+    if (!hasBuildId) {
+      console.warn('[next-ssg-cache] No build ID. Initializing without persistent cache')
     }
+
+    const buildId = !hasBuildId ? uniqid() : fs.readFileSync(SsgCache.BUILD_ID_PATH, {
+      encoding: 'utf-8',
+    });
+
+    if (!buildId) {
+      throw new Error('Empty build ID');
+    }
+
+    this.id = buildId;
+
+    fs.ensureDirSync(this.path());
   }
 
   public path(keys: string[] = [], ext?: 'cache' | 'stat') {

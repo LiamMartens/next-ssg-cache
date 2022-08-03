@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## v1.2.2
+* Don't catch init error
+## v1.2.1
+* Allow cache to be used without persistance
+
 ## v1.2.0
 * Improved local cacching
 
