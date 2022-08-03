@@ -40,11 +40,16 @@ export class SsgCache<S extends SsgCacheStore> {
   }
 
   public id: string;
-  public debugInstance = debug('next-ssg-cache');
+  public persistent: boolean;
+  public cache: Record<string, SsgCacheEntry<any>> = {};
+  public cacheStatus: Record<string, CacheStatus> = {};
   public maxTimeout = 60000;
+  public debugInstance = debug('next-ssg-cache');
 
   constructor() {
     const hasBuildId = fs.existsSync(SsgCache.BUILD_ID_PATH)
+    this.persistent = hasBuildId
+
     if (!hasBuildId) {
       console.warn('[next-ssg-cache] No build ID. Initializing without persistent cache')
     }
@@ -58,13 +63,6 @@ export class SsgCache<S extends SsgCacheStore> {
     }
 
     this.id = buildId;
-
-    const cachePath = this.path()
-    if (!fs.existsSync(cachePath)) {
-      fs.mkdirSync(cachePath, {
-        recursive: true,
-      });
-    }
   }
 
   public path(keys: string[] = [], ext?: 'cache' | 'stat') {
@@ -75,44 +73,63 @@ export class SsgCache<S extends SsgCacheStore> {
   }
 
   public async writeCacheStatus(keys: string[], status: CacheStatus) {
-    await fs.writeFile(this.path(keys, 'stat'), String(status), {
-      encoding: 'utf-8',
-    });
+    const statPath = this.path(keys, 'stat')
+    if (this.persistent) {
+      await fs.writeFile(statPath, String(status), {
+        encoding: 'utf-8',
+      });
+    } else {
+      this.cacheStatus[statPath] = status
+    }
   }
 
   public async readCacheStatus(keys: string[]) {
     const statPath = this.path(keys, 'stat')
-    if (fs.existsSync(statPath)) {
-      const status = await fs.readFile(statPath, {
-        encoding: 'utf-8',
-        flag: 'r',
-      });
-      if (!Number.isNaN(Number(status))) {
-        return Number(status) as CacheStatus;
+    if (this.persistent) {
+      if (fs.existsSync(statPath)) {
+        const status = await fs.readFile(statPath, {
+          encoding: 'utf-8',
+          flag: 'r',
+        });
+        if (!Number.isNaN(Number(status))) {
+          return Number(status) as CacheStatus;
+        }
       }
+    } else {
+      return this.cacheStatus[statPath] ?? CacheStatus.MISS;
     }
     return CacheStatus.MISS;
   }
 
   public async writeCache<T extends Extract<keyof S, string>>(keys: [T, ...string[]], data: S[T], ttl?: number) {
-    await fs.writeFile(this.path(keys, 'cache'), JSON.stringify({
+    const cachePath = this.path(keys, 'cache')
+    const cacheData = {
       data,
       ...(typeof ttl === 'number' ? {
         exp: Date.now() + ttl,
       } : {}),
-    }), {
-      encoding: 'utf-8',
-    });
+    }
+    if (this.persistent) {
+      await fs.writeFile(cachePath, JSON.stringify(cacheData), {
+        encoding: 'utf-8',
+      });
+    } else {
+      this.cache[cachePath] = cacheData
+    }
   }
 
   public async readCache<T extends Extract<keyof S, string>>(keys: [T, ...string[]]): Promise<SsgCacheEntry<S[T]> | null> {
     try {
       const cachePath = this.path(keys, 'cache')
-      if (fs.existsSync(cachePath)) {
-        const data = await fs.readFile(cachePath, 'utf-8')
-        return data ? JSON.parse(data) : null
+      if (this.persistent) {
+        if (fs.existsSync(cachePath)) {
+          const data = await fs.readFile(cachePath, 'utf-8')
+          return data ? JSON.parse(data) : null
+        } else {
+          this.debugInstance('cache miss %o', keys)
+        }
       } else {
-        this.debugInstance('cache miss %o', keys)
+        return this.cache[cachePath] ?? null
       }
       return null
     } catch (err) {
