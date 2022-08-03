@@ -1,5 +1,7 @@
 # CHANGELOG
 
+## v1.3.2
+* Disable `persistent` if the directory can not be created
 ## v1.3.1
 * Fixed `ENOENT` error
 
