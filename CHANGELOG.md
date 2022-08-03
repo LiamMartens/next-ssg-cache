@@ -1,6 +1,9 @@
 # CHANGELOG
 
 ## v1.3.1
+* Fixed `ENOENT` error
+
+## v1.3.0
 * Support non-persistent cache
 
 ## v1.2.4
