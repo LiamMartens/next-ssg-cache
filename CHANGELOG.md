@@ -1,5 +1,8 @@
 # CHANGELOG
 
+## v1.2.4
+* Updated `fs-extra`
+
 ## v1.2.3
 * Recursively ensure directory
 

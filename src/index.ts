@@ -29,8 +29,11 @@ export class SsgCache<S extends SsgCacheStore> {
 
   public static async init() {
     if (!fs.existsSync(SsgCache.CACHE_DIR)) {
-      await fs.mkdirp(SsgCache.CACHE_DIR);
+      await fs.mkdir(SsgCache.CACHE_DIR, {
+        recursive: true,
+      });
     }
+
     const id = uniqid();
     await fs.writeFile(SsgCache.BUILD_ID_PATH, id);
     return id;
@@ -58,7 +61,9 @@ export class SsgCache<S extends SsgCacheStore> {
 
     const cachePath = this.path()
     if (!fs.existsSync(cachePath)) {
-      fs.mkdirpSync(this.path());
+      fs.mkdirSync(cachePath, {
+        recursive: true,
+      });
     }
   }
 
