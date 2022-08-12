@@ -22,7 +22,7 @@ export type SsgCacheGetOptions = {
 export interface SsgCacheStore {
 }
 
-export class SsgCache<S extends SsgCacheStore> {
+export class SsgCache<S extends SsgCacheStore = SsgCacheStore> {
   public static CACHE_DIR = path.resolve(process.cwd(), 'node_modules/.cache/next-ssg-cache');
   public static BUILD_ID_PATH = path.resolve(SsgCache.CACHE_DIR, 'BUILD_ID');
   public static BUILD_CACHE_PATH = path.resolve(SsgCache.CACHE_DIR, 'cache');
