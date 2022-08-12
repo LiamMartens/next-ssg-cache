@@ -1,5 +1,8 @@
 # CHANGELOG
 
+# v1.3.4
+* Fixed generic class type
+
 # v1.3.3
 * Fixed persistent switch
 
