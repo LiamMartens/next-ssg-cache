@@ -1,5 +1,8 @@
 # CHANGELOG
 
+# v1.3.6
+* Try to write build ID on runtime
+
 # v1.3.5
 * Write to /tmp folder for Vercel
 

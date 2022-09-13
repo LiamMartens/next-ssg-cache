@@ -52,14 +52,22 @@ export class SsgCache<S extends SsgCacheStore = SsgCacheStore> {
 
   constructor() {
     const hasBuildId = fs.existsSync(SsgCache.BUILD_ID_PATH)
-    this.persistent = hasBuildId
-
     const buildId = !hasBuildId ? uniqid() : fs.readFileSync(SsgCache.BUILD_ID_PATH, {
       encoding: 'utf-8',
     });
 
     if (!buildId) {
       throw new Error('Empty build ID');
+    }
+
+    try {
+      if (!hasBuildId) {
+        fs.writeFileSync(SsgCache.BUILD_ID_PATH, buildId)
+      }
+      this.persistent = true
+    } catch (err) {
+      this.debugInstance(`Unable to write build ID: (%O)`, err)
+      this.persistent = false
     }
 
     this.id = buildId;
