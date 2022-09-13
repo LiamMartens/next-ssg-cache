@@ -23,7 +23,10 @@ export interface SsgCacheStore {
 }
 
 export class SsgCache<S extends SsgCacheStore = SsgCacheStore> {
-  public static CACHE_DIR = path.resolve(process.cwd(), 'node_modules/.cache/next-ssg-cache');
+  public static CACHE_DIR =
+    process.env.VERCEL === '1'
+      ? path.resolve('/tmp/.next-ssg-cache')
+      : path.resolve(process.cwd(), 'node_modules/.cache/next-ssg-cache');
   public static BUILD_ID_PATH = path.resolve(SsgCache.CACHE_DIR, 'BUILD_ID');
   public static BUILD_CACHE_PATH = path.resolve(SsgCache.CACHE_DIR, 'cache');
   public static cache: Record<string, SsgCacheEntry<any>> = {};

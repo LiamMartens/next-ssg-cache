@@ -1,5 +1,8 @@
 # CHANGELOG
 
+# v1.3.5
+* Write to /tmp folder for Vercel
+
 # v1.3.4
 * Fixed generic class type
 
