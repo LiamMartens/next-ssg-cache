@@ -62,6 +62,9 @@ export class SsgCache<S extends SsgCacheStore = SsgCacheStore> {
 
     try {
       if (!hasBuildId) {
+        if (!fs.existsSync(SsgCache.CACHE_DIR)) {
+          fs.mkdirSync(SsgCache.CACHE_DIR, { recursive: true })
+        }
         fs.writeFileSync(SsgCache.BUILD_ID_PATH, buildId)
       }
       this.persistent = true
