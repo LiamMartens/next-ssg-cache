@@ -1,5 +1,19 @@
 # CHANGELOG
 
+# v1.3.5
+* Write to /tmp folder for Vercel
+
+# v1.3.4
+* Fixed generic class type
+
+# v1.3.3
+* Fixed persistent switch
+
+## v1.3.2
+* Disable `persistent` if the directory can not be created
+## v1.3.1
+* Fixed `ENOENT` error
+
 ## v1.3.0
 * Support non-persistent cache
 

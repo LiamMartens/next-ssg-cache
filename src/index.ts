@@ -22,10 +22,15 @@ export type SsgCacheGetOptions = {
 export interface SsgCacheStore {
 }
 
-export class SsgCache<S extends SsgCacheStore> {
-  public static CACHE_DIR = path.resolve(process.cwd(), 'node_modules/.cache/next-ssg-cache');
+export class SsgCache<S extends SsgCacheStore = SsgCacheStore> {
+  public static CACHE_DIR =
+    process.env.VERCEL === '1'
+      ? path.resolve('/tmp/.next-ssg-cache')
+      : path.resolve(process.cwd(), 'node_modules/.cache/next-ssg-cache');
   public static BUILD_ID_PATH = path.resolve(SsgCache.CACHE_DIR, 'BUILD_ID');
   public static BUILD_CACHE_PATH = path.resolve(SsgCache.CACHE_DIR, 'cache');
+  public static cache: Record<string, SsgCacheEntry<any>> = {};
+  public static cacheStatus: Record<string, CacheStatus> = {};
 
   public static async init() {
     if (!fs.existsSync(SsgCache.CACHE_DIR)) {
@@ -41,18 +46,13 @@ export class SsgCache<S extends SsgCacheStore> {
 
   public id: string;
   public persistent: boolean;
-  public cache: Record<string, SsgCacheEntry<any>> = {};
-  public cacheStatus: Record<string, CacheStatus> = {};
+
   public maxTimeout = 60000;
   public debugInstance = debug('next-ssg-cache');
 
   constructor() {
     const hasBuildId = fs.existsSync(SsgCache.BUILD_ID_PATH)
     this.persistent = hasBuildId
-
-    if (!hasBuildId) {
-      console.warn('[next-ssg-cache] No build ID. Initializing without persistent cache')
-    }
 
     const buildId = !hasBuildId ? uniqid() : fs.readFileSync(SsgCache.BUILD_ID_PATH, {
       encoding: 'utf-8',
@@ -63,6 +63,23 @@ export class SsgCache<S extends SsgCacheStore> {
     }
 
     this.id = buildId;
+
+    if (this.persistent) {
+      const path = this.path()
+      try {
+        if (!fs.existsSync(path)) {
+          fs.mkdirSync(path, {
+            recursive: true,
+          });
+        }
+      } catch(err) {
+        console.warn('[next-ssg-cache] Running in memory-only mode')
+        this.debugInstance(`Unable to create cache directory, running in memory-only mode: (%O)`, err)
+        this.persistent = false
+      }
+    } else {
+      console.warn('[next-ssg-cache] Running in memory-only mode')
+    }
   }
 
   public path(keys: string[] = [], ext?: 'cache' | 'stat') {
@@ -79,7 +96,7 @@ export class SsgCache<S extends SsgCacheStore> {
         encoding: 'utf-8',
       });
     } else {
-      this.cacheStatus[statPath] = status
+      SsgCache.cacheStatus[statPath] = status
     }
   }
 
@@ -96,7 +113,7 @@ export class SsgCache<S extends SsgCacheStore> {
         }
       }
     } else {
-      return this.cacheStatus[statPath] ?? CacheStatus.MISS;
+      return SsgCache.cacheStatus[statPath] ?? CacheStatus.MISS;
     }
     return CacheStatus.MISS;
   }
@@ -114,7 +131,7 @@ export class SsgCache<S extends SsgCacheStore> {
         encoding: 'utf-8',
       });
     } else {
-      this.cache[cachePath] = cacheData
+      SsgCache.cache[cachePath] = cacheData
     }
   }
 
@@ -129,7 +146,7 @@ export class SsgCache<S extends SsgCacheStore> {
           this.debugInstance('cache miss %o', keys)
         }
       } else {
-        return this.cache[cachePath] ?? null
+        return SsgCache.cache[cachePath] ?? null
       }
       return null
     } catch (err) {
